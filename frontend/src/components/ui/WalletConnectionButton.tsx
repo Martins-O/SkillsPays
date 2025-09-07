@@ -20,7 +20,7 @@ const WalletConnectionButton = React.forwardRef<HTMLButtonElement, WalletConnect
     children,
     ...props
   }, ref) => {
-    const { account, isConnected, isConnecting, error, connect, disconnect } = useWeb3();
+    const { account, isConnected, isConnecting, isCorrectNetwork, isSwitchingNetwork, error, connect, disconnect, switchNetwork } = useWeb3();
 
     const handleClick = async () => {
       if (isConnected) {
@@ -46,25 +46,40 @@ const WalletConnectionButton = React.forwardRef<HTMLButtonElement, WalletConnect
                 {formatAddress(account)}
               </span>
               
-              {/* Chain Badge */}
-              {showChainId && (
-                <Badge variant="outline" size="sm">
-                  Ethereum
-                </Badge>
-              )}
+              {/* Network Badge */}
+              <Badge 
+                variant={isCorrectNetwork ? "success" : "destructive"} 
+                size="sm"
+              >
+                {isCorrectNetwork ? "Arbitrum Sepolia" : "Wrong Network"}
+              </Badge>
             </div>
           </div>
 
-          {/* Disconnect Button */}
-          <Button
-            ref={ref}
-            variant="outline"
-            size="sm"
-            onClick={handleClick}
-            {...props}
-          >
-            Disconnect
-          </Button>
+          {/* Network Switch / Disconnect Buttons */}
+          <div className="flex items-center space-x-2">
+            {!isCorrectNetwork && (
+              <Button
+                variant="warning"
+                size="sm"
+                onClick={switchNetwork}
+                loading={isSwitchingNetwork}
+                loadingText="Switching..."
+              >
+                Switch Network
+              </Button>
+            )}
+            <Button
+              ref={ref}
+              variant="outline"
+              size="sm"
+              onClick={handleClick}
+              disabled={isSwitchingNetwork}
+              {...props}
+            >
+              Disconnect
+            </Button>
+          </div>
         </div>
       );
     }
@@ -97,7 +112,20 @@ const WalletConnectionButton = React.forwardRef<HTMLButtonElement, WalletConnect
         </Button>
 
         {error && (
-          <p className="text-xs text-danger-600">{error}</p>
+          <div className="flex items-center space-x-2">
+            <p className="text-xs text-danger-600">{error}</p>
+            {error.includes('switch to Arbitrum Sepolia') && (
+              <Button
+                variant="warning"
+                size="sm"
+                onClick={switchNetwork}
+                loading={isSwitchingNetwork}
+                loadingText="Switching..."
+              >
+                Switch Network
+              </Button>
+            )}
+          </div>
         )}
       </div>
     );
