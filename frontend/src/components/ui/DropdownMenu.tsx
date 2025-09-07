@@ -10,6 +10,7 @@ export interface DropdownItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   description?: string;
+  highlight?: boolean;
 }
 
 export interface DropdownMenuProps {
@@ -103,7 +104,9 @@ export function DropdownMenu({ label, icon: Icon, items, className }: DropdownMe
                   href={item.href}
                   className={cn(
                     'flex items-start space-x-3 px-4 py-3 text-sm transition-all duration-200',
-                    'text-neutral-600 hover:text-primary-600 hover:bg-primary-50',
+                    item.highlight 
+                      ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-2 border-yellow-400'
+                      : 'text-neutral-600 hover:text-primary-600 hover:bg-primary-50',
                     'focus:outline-none focus:text-primary-600 focus:bg-primary-50'
                   )}
                   onClick={() => setIsOpen(false)}

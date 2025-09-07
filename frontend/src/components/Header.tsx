@@ -81,6 +81,13 @@ export function Header() {
           label: 'DAO Governance', 
           icon: Settings,
           description: 'Participate in community decisions'
+        },
+        { 
+          href: '/hackathon', 
+          label: '🏆 Hackathon', 
+          icon: Trophy,
+          description: 'Join our global hackathon - Coming Soon!',
+          highlight: true
         }
       ] as DropdownItem[]
     },

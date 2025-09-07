@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { getSigner, getContract } from '@/lib/web3';
 import { CONTRACT_ABIS } from '@/contracts/abis';
 import { getContractAddress, ContractName } from '@/contracts/addresses';
-import { safeContractCall, handleUserError, getUserFriendlyError } from '@/utils/errorHandling';
+import { getWeb3ErrorMessage } from '@/utils/web3Errors';
 
 interface ContractHookReturn {
   loading: boolean;
@@ -44,7 +44,7 @@ export function useContract(contractName: ContractName) {
       
       return tx;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Transaction failed';
+      const message = getWeb3ErrorMessage(err);
       setError(message);
       throw err;
     } finally {
@@ -220,11 +220,10 @@ export function useSkillGraph() {
 
   const createSkill = useCallback(async (
     name: string,
-    description: string,
     category: string,
-    prerequisites: number[]
+    description: string
   ) => {
-    return baseHook.callContract('createSkill', [name, description, category, prerequisites]);
+    return baseHook.callContract('createSkill', [name, category, description]);
   }, [baseHook]);
 
   const updateSkillProgress = useCallback(async (

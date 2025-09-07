@@ -3,14 +3,10 @@ import { Button, type ButtonProps } from './Button';
 import { Alert } from './Alert';
 import { Badge } from './Badge';
 import { cn } from '@/lib/utils';
+import { TransactionState, isTransactionResponse, hasTransactionHash } from '@/types/web3';
+import { getWeb3ErrorMessage } from '@/utils/web3Errors';
 
-interface TransactionState {
-  status: 'idle' | 'pending' | 'confirming' | 'success' | 'error';
-  hash?: string;
-  error?: string;
-  confirmations?: number;
-  requiredConfirmations?: number;
-}
+// TransactionState is now imported from types/web3.ts
 
 interface TransactionButtonProps extends Omit<ButtonProps, 'loading' | 'onClick' | 'onError'> {
   onTransaction: () => Promise<unknown>;
@@ -49,27 +45,27 @@ const TransactionButton = React.forwardRef<HTMLButtonElement, TransactionButtonP
         
         const result = await onTransaction();
         
-        if ((result as { hash?: string })?.hash) {
+        if (hasTransactionHash(result)) {
           setTxState({ 
             status: 'confirming', 
-            hash: (result as { hash: string }).hash,
+            hash: result.hash,
             confirmations: 0,
             requiredConfirmations 
           });
           
           // Wait for confirmations
-          if ((result as any).wait) {
-            const receipt = await (result as any).wait();
+          if (isTransactionResponse(result)) {
+            const receipt = await result.wait();
             setTxState({ 
               status: 'success', 
-              hash: receipt.transactionHash || (result as { hash: string }).hash,
-              confirmations: receipt.confirmations || 1
+              hash: receipt.hash || result.hash,
+              confirmations: 1
             });
             onSuccess?.(receipt);
           } else {
             setTxState({ 
               status: 'success', 
-              hash: (result as { hash: string }).hash,
+              hash: result.hash,
               confirmations: 1
             });
             onSuccess?.(result);
@@ -91,7 +87,7 @@ const TransactionButton = React.forwardRef<HTMLButtonElement, TransactionButtonP
           }
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        const errorMessage = getWeb3ErrorMessage(error);
         setTxState({ 
           status: 'error', 
           error: errorMessage 

@@ -1,101 +1,92 @@
 'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import React, { Component, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
 interface State {
   hasError: boolean;
   error?: Error;
-  errorInfo?: ErrorInfo;
+  errorId: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
-
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+  constructor(props: Props) {
+    super(props);
+    this.state = { 
+      hasError: false, 
+      errorId: Math.random().toString(36).substring(7)
+    };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    this.setState({
+  static getDerivedStateFromError(error: Error): State {
+    return {
+      hasError: true,
       error,
-      errorInfo
-    });
+      errorId: Math.random().toString(36).substring(7)
+    };
   }
 
-  private handleRefresh = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
-    window.location.reload();
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    
+    // Log error for monitoring
+    if (typeof window !== 'undefined') {
+      // In production, you'd send this to your error monitoring service
+      console.error('Error ID:', this.state.errorId);
+      console.error('Component Stack:', errorInfo.componentStack);
+    }
+    
+    this.props.onError?.(error, errorInfo);
+  }
+
+  handleRetry = () => {
+    this.setState({ 
+      hasError: false, 
+      error: undefined,
+      errorId: Math.random().toString(36).substring(7)
+    });
   };
 
-  private handleGoHome = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
-    window.location.href = '/';
-  };
-
-  public render() {
+  render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
-            <div className="mb-6">
-              <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
-              <p className="text-gray-600">
-                We encountered an unexpected error. This might be due to a network issue or a temporary problem with our services.
-              </p>
+        <div className="min-h-[400px] flex items-center justify-center p-6">
+          <div className="text-center max-w-md">
+            <div className="p-4 bg-red-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-red-500" />
             </div>
-
-            <div className="space-y-3 mb-6">
+            
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Something went wrong
+            </h2>
+            
+            <p className="text-gray-600 mb-6">
+              {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
+            </p>
+            
+            <div className="space-y-3">
               <button
-                onClick={this.handleRefresh}
-                className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={this.handleRetry}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mx-auto"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Try Again</span>
               </button>
               
-              <button
-                onClick={this.handleGoHome}
-                className="w-full flex items-center justify-center space-x-2 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                <span>Go Home</span>
-              </button>
+              <p className="text-sm text-gray-400">
+                Error ID: {this.state.errorId}
+              </p>
             </div>
-
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="text-left">
-                <summary className="cursor-pointer text-sm text-gray-500 mb-2">
-                  Error Details (Development)
-                </summary>
-                <div className="bg-gray-100 p-3 rounded text-xs text-gray-700 overflow-auto max-h-48">
-                  <div className="mb-2">
-                    <strong>Error:</strong> {this.state.error.message}
-                  </div>
-                  {this.state.error.stack && (
-                    <div>
-                      <strong>Stack:</strong>
-                      <pre className="whitespace-pre-wrap mt-1">
-                        {this.state.error.stack}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </details>
-            )}
           </div>
         </div>
       );
@@ -105,21 +96,68 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Hook version for functional components
-export function useErrorHandler() {
-  const [error, setError] = React.useState<Error | null>(null);
-
-  const resetError = () => setError(null);
-
-  React.useEffect(() => {
-    if (error) {
-      console.error('Error caught by useErrorHandler:', error);
-    }
-  }, [error]);
-
-  const catchError = React.useCallback((error: Error) => {
-    setError(error);
-  }, []);
-
-  return { error, resetError, catchError };
+// Web3 specific error boundary
+interface Web3ErrorBoundaryProps extends Props {
+  networkName?: string;
 }
+
+export class Web3ErrorBoundary extends ErrorBoundary {
+  render() {
+    if (this.state.hasError) {
+      const error = this.state.error;
+      const isWeb3Error = error?.message?.includes('user rejected') ||
+                         error?.message?.includes('insufficient funds') ||
+                         error?.message?.includes('network') ||
+                         error?.message?.includes('MetaMask');
+      
+      if (isWeb3Error) {
+        return (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center space-x-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Web3 Transaction Error
+                </h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  {this.getWeb3ErrorMessage(error)}
+                </p>
+                <button
+                  onClick={this.handleRetry}
+                  className="text-sm text-yellow-800 underline hover:no-underline mt-2"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    return super.render();
+  }
+
+  private getWeb3ErrorMessage(error?: Error): string {
+    if (!error) return 'Unknown Web3 error occurred';
+    
+    const message = error.message.toLowerCase();
+    
+    if (message.includes('user rejected')) {
+      return 'Transaction was cancelled. Please try again and confirm the transaction.';
+    }
+    if (message.includes('insufficient funds')) {
+      return 'Insufficient funds to complete this transaction. Please check your wallet balance.';
+    }
+    if (message.includes('network')) {
+      return 'Network error. Please check your connection and try again.';
+    }
+    if (message.includes('gas')) {
+      return 'Transaction failed due to gas issues. Please try again with higher gas limit.';
+    }
+    
+    return error.message;
+  }
+}
+
+export default ErrorBoundary;

@@ -197,9 +197,8 @@ export default function SkillsDashboard() {
     try {
       await skillGraph.createSkill(
         skillForm.name,
-        skillForm.description,
         skillForm.category,
-        skillForm.prerequisites
+        skillForm.description
       );
       
       // Reset form

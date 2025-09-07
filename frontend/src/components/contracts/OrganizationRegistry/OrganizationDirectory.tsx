@@ -193,9 +193,14 @@ export default function OrganizationDirectory() {
     return levels[level] || 'Unknown';
   };
 
-  const getVerificationLevelColor = (level: number) => {
-    const colors = ['gray', 'blue', 'purple', 'green'];
-    return colors[level] || 'gray';
+  const getVerificationLevelColor = (level: number): 'secondary' | 'primary' | 'success' | 'warning' => {
+    const colorMap: Record<number, 'secondary' | 'primary' | 'success' | 'warning'> = {
+      0: 'secondary', // Unverified
+      1: 'primary',   // Verified
+      2: 'warning',   // Premium
+      3: 'success'    // Enterprise
+    };
+    return colorMap[level] || 'secondary';
   };
 
   const getStatusText = (status: number) => {
@@ -378,7 +383,7 @@ export default function OrganizationDirectory() {
                       <p className="text-sm text-gray-500" aria-label="Wallet address">{formatAddress(org.walletAddress)}</p>
                     </div>
                   </div>
-                  <Badge variant={getVerificationLevelColor(org.verificationLevel) as any} className="text-xs">
+                  <Badge variant={getVerificationLevelColor(org.verificationLevel)} className="text-xs">
                     {getVerificationLevelText(org.verificationLevel)}
                   </Badge>
                 </div>

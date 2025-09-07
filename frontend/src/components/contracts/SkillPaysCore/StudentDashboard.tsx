@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSkillPaysCore, useStudentBadges } from '@/hooks/useContracts';
 import { useWeb3 } from '@/hooks/useWeb3';
-import { Card, CardHeader, CardTitle, CardContent, Input, Button, Badge } from '@/components/ui';
-import { sanitizeText } from '@/utils/security';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge } from '@/components/ui';
 import BadgeCollection from '@/components/contracts/StudentBadges/BadgeCollection';
+import { Web3ErrorBoundary } from '@/components/ErrorBoundary';
 import { UserIcon, TrophyIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
 interface StudentStats {
@@ -30,13 +30,14 @@ export default function StudentDashboard() {
   const [bootcamps, setBootcamps] = useState<EnrolledBootcamp[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBadges, setShowBadges] = useState(false);
-  const [studentName, setStudentName] = useState('');
-  const [registering, setRegistering] = useState(false);
-  const [nameError, setNameError] = useState('');
+  // Registration state removed - handled by parent component
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Removed unused sanitization function
+  const isMountedRef = useRef(true);
   
-  const { getStudent, getStudentBootcamps, getBootcamp, registerStudent } = useSkillPaysCore();
+  
+  const { getStudent, getStudentBootcamps, getBootcamp } = useSkillPaysCore();
   const { balanceOf } = useStudentBadges();
   const { account, connect } = useWeb3();
 
@@ -104,7 +105,7 @@ export default function StudentDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [account, getStudent, getStudentBootcamps, getBootcamp, balanceOf]);
+  }, [account]); // Only depend on account to prevent infinite loop
 
   useEffect(() => {
     if (account) {
@@ -112,59 +113,18 @@ export default function StudentDashboard() {
     }
   }, [account, loadStudentData]);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeout on unmount and set mounted flag
   useEffect(() => {
     return () => {
+      isMountedRef.current = false;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, []);
 
-  const validateStudentName = (name: string) => {
-    if (!name.trim()) {
-      setNameError('Name is required');
-      return false;
-    }
-    if (name.trim().length < 2) {
-      setNameError('Name must be at least 2 characters');
-      return false;
-    }
-    if (name.trim().length > 50) {
-      setNameError('Name must be less than 50 characters');
-      return false;
-    }
-    if (!/^[a-zA-Z\s\-'\.]+$/.test(name.trim())) {
-      setNameError('Name can only contain letters, spaces, hyphens, apostrophes, and periods');
-      return false;
-    }
-    setNameError('');
-    return true;
-  };
-
-  const handleStudentNameChange = (value: string) => {
-    setStudentName(value);
-    if (nameError) {
-      validateStudentName(value);
-    }
-  };
-
-  const handleRegisterStudent = async () => {
-    if (!account || !validateStudentName(studentName)) return;
-    
-    try {
-      setRegistering(true);
-      await registerStudent(sanitizeText(studentName.trim()));
-      // Reload data after registration
-      timeoutRef.current = setTimeout(() => {
-        loadStudentData();
-      }, 2000); // Wait for transaction to be mined
-    } catch (error) {
-      console.error('Failed to register student:', error);
-    } finally {
-      setRegistering(false);
-    }
-  };
+  // Registration now handled by parent component
 
   if (!account) {
     return (
@@ -210,56 +170,202 @@ export default function StudentDashboard() {
   }
 
   if (!stats) {
+    // Show guest dashboard with demo content
     return (
-      <div className="flex items-center justify-center min-h-[60vh] p-4">
-        <Card variant="elevated" className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-              <UserIcon className="h-8 w-8 text-primary-600" />
+      <Web3ErrorBoundary>
+        <div className="container mx-auto space-y-6 p-4">
+          {/* Guest Welcome Card */}
+          <Card variant="elevated" className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl mb-2">👋 Welcome, Explorer!</CardTitle>
+                  <p className="text-neutral-600">Discover the world of decentralized learning</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-indigo-600 mb-1">Guest Mode</div>
+                  <div className="text-sm text-neutral-500">Exploring Features</div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card variant="outlined" className="text-center transition-colors hover:border-blue-200">
+                  <CardContent className="p-6">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                      <BookOpenIcon className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600 mb-1">∞</div>
+                    <div className="text-sm text-neutral-600">Available Courses</div>
+                  </CardContent>
+                </Card>
+                
+                <Card variant="outlined" className="text-center transition-colors hover:border-green-200">
+                  <CardContent className="p-6">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                      <TrophyIcon className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-green-600 mb-1">🎯</div>
+                    <div className="text-sm text-neutral-600">Skills to Master</div>
+                  </CardContent>
+                </Card>
+                
+                <Card variant="outlined" className="text-center transition-colors hover:border-purple-200">
+                  <CardContent className="p-6">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
+                      <UserIcon className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-purple-600 mb-1">👥</div>
+                    <div className="text-sm text-neutral-600">Active Community</div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Demo Features Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Available Skills */}
+            <Card variant="elevated">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <BookOpenIcon className="h-5 w-5 text-blue-600" />
+                  <span>Popular Skills</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {['Solidity Programming', 'Web3 Frontend', 'DeFi Protocols', 'React Development', 'Smart Contract Security'].map((skill, index) => (
+                    <div key={skill} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
+                          {index + 1}
+                        </div>
+                        <span className="font-medium">{skill}</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        Learn
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Demo Achievements */}
+            <Card variant="elevated">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrophyIcon className="h-5 w-5 text-yellow-600" />
+                  <span>Achievement System</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { name: 'First Steps', desc: 'Complete your first lesson', icon: '🎯' },
+                    { name: 'Code Master', desc: 'Write your first smart contract', icon: '💻' },
+                    { name: 'Community Helper', desc: 'Help other students', icon: '🤝' },
+                    { name: 'Skill Collector', desc: 'Master 5 different skills', icon: '🏆' },
+                    { name: 'Blockchain Expert', desc: 'Complete advanced courses', icon: '⭐' }
+                  ].map((achievement) => (
+                    <div key={achievement.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg opacity-75">
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl">{achievement.icon}</div>
+                        <div>
+                          <div className="font-medium">{achievement.name}</div>
+                          <div className="text-sm text-gray-600">{achievement.desc}</div>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        Locked
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Hackathon Platform Coming Soon */}
+          <Card variant="elevated" className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden relative">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="absolute top-4 right-4 animate-bounce">
+              <div className="bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-bold">
+                🚀 PHASE 2
+              </div>
             </div>
-            <CardTitle className="text-2xl">Welcome to SkillPays!</CardTitle>
-            <p className="text-neutral-600">
-              Create your student profile to start learning and earning badges
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Input
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={studentName}
-                  onChange={(e) => handleStudentNameChange(e.target.value)}
-                  label="Student Name"
-                  required
-                  leftIcon={<UserIcon className="h-4 w-4" />}
-                />
-                {nameError && (
-                  <p className="text-red-600 text-sm mt-1">{nameError}</p>
-                )}
+            <CardContent className="py-8 relative z-10">
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-2">🏗️</div>
+                <h3 className="text-2xl font-bold mb-2">Hackathon Platform</h3>
+                <p className="text-lg opacity-90 mb-4">Create & Host Educational Hackathons</p>
               </div>
               
-              <Button
-                onClick={handleRegisterStudent}
-                disabled={!studentName.trim() || !!nameError || registering}
-                className="w-full"
-                size="lg"
-              >
-                {registering ? 'Registering...' : 'Register as Student'}
-              </Button>
-              
-              <p className="text-xs text-neutral-500 text-center">
-                By you agree to our terms of service and privacy policy.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+                  <div className="text-2xl mb-2">🏗️</div>
+                  <div className="font-bold">Create</div>
+                  <div className="text-sm opacity-80">Your own hackathons</div>
+                </div>
+                <div className="text-center p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+                  <div className="text-2xl mb-2">👥</div>
+                  <div className="font-bold">Manage</div>
+                  <div className="text-sm opacity-80">Teams & participants</div>
+                </div>
+                <div className="text-center p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+                  <div className="text-2xl mb-2">🏆</div>
+                  <div className="font-bold">Award</div>
+                  <div className="text-sm opacity-80">Winners automatically</div>
+                </div>
+              </div>
+
+              <div className="text-center mb-6">
+                <p className="opacity-90 mb-4">
+                  The DoraHacks of decentralized learning. Host competitions, manage participants, and distribute prizes on-chain.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center space-x-4">
+                <button className="bg-yellow-400 text-black px-6 py-3 rounded-lg font-bold hover:bg-yellow-300 transition-colors">
+                  Get Notified 🔔
+                </button>
+                <button className="border-2 border-white/50 px-6 py-3 rounded-lg font-bold hover:bg-white/10 transition-colors">
+                  Learn More
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Call to Action */}
+          <Card variant="elevated" className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+            <CardContent className="py-8 text-center">
+              <h3 className="text-xl font-bold mb-2">Ready to Start Your Journey?</h3>
+              <p className="mb-6 opacity-90">Register as a student to unlock all features and start earning on-chain credentials!</p>
+              <div className="flex items-center justify-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm opacity-90">
+                  <span>✅</span>
+                  <span>On-chain credentials</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm opacity-90">
+                  <span>✅</span>
+                  <span>Progress tracking</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm opacity-90">
+                  <span>✅</span>
+                  <span>Peer mentorship</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Web3ErrorBoundary>
     );
   }
 
   return (
-    <div className="container mx-auto space-y-6 p-4">
+    <Web3ErrorBoundary>
+      <div className="container mx-auto space-y-6 p-4">
       <Card variant="elevated" className="overflow-hidden">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -514,6 +620,7 @@ export default function StudentDashboard() {
           </Card>
         </div>
       )}
-    </div>
+      </div>
+    </Web3ErrorBoundary>
   );
 }
