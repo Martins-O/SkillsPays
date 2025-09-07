@@ -1,0 +1,3 @@
+[submodule "SkillPays"]
+	path = [SkillPays, contract, frontend]
+	url = git@github.com:SkillPays/SkillPays.git

@@ -1,0 +1,416 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useOrganizationRegistry } from '@/hooks/useContracts';
+import { Card, CardHeader, CardTitle, CardContent, Badge, Input } from '@/components/ui';
+import { 
+  Building2, 
+  Users, 
+  BookOpen, 
+  Star, 
+  Globe, 
+  Mail, 
+  Search,
+  Shield,
+  Filter,
+  ExternalLink
+} from 'lucide-react';
+
+interface Organization {
+  id: number;
+  name: string;
+  description: string;
+  website: string;
+  logoUrl: string;
+  contactEmail: string;
+  walletAddress: string;
+  verificationLevel: number;
+  status: number;
+  registrationDate: number;
+  lastUpdated: number;
+  totalBootcamps: number;
+  totalStudents: number;
+  reputationScore: number;
+  specializations: string[];
+  canCreateBootcamps: boolean;
+  canIssueCertificates: boolean;
+  stakingAmount: number;
+}
+
+export default function OrganizationDirectory() {
+  const { getTotalOrganizations, getOrganization, getOrganizationSpecializations } = useOrganizationRegistry();
+  
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [filteredOrgs, setFilteredOrgs] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [verificationFilter, setVerificationFilter] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<number | null>(1); // Default to Active only
+  const [specializationFilter, setSpecializationFilter] = useState('');
+
+  useEffect(() => {
+    loadOrganizations();
+  }, []);
+
+  useEffect(() => {
+    filterOrganizations();
+  }, [searchTerm, verificationFilter, statusFilter, specializationFilter, organizations]);
+
+  const loadOrganizations = async () => {
+    try {
+      setLoading(true);
+      const totalOrgs = await getTotalOrganizations();
+      const orgPromises = [];
+
+      // Load organizations (limit to first 50 for performance)
+      const maxOrgs = Math.min(Number(totalOrgs), 50);
+      
+      for (let i = 1; i <= maxOrgs; i++) {
+        orgPromises.push(loadSingleOrganization(i));
+      }
+
+      const loadedOrgs = await Promise.all(orgPromises);
+      const validOrgs = loadedOrgs.filter(org => org !== null) as Organization[];
+      
+      setOrganizations(validOrgs);
+    } catch (error) {
+      console.error('Error loading organizations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSingleOrganization = async (id: number): Promise<Organization | null> => {
+    try {
+      const orgData = await getOrganization(id);
+      
+      if (!orgData || !orgData.name) {
+        return null;
+      }
+
+      // Load specializations
+      let specializations: string[] = [];
+      try {
+        specializations = await getOrganizationSpecializations(id) || [];
+      } catch (err) {
+        console.warn(`Could not load specializations for org ${id}:`, err);
+      }
+
+      return {
+        id: Number(orgData.id),
+        name: orgData.name || '',
+        description: orgData.description || '',
+        website: orgData.website || '',
+        logoUrl: orgData.logoUrl || '',
+        contactEmail: orgData.contactEmail || '',
+        walletAddress: orgData.walletAddress || '',
+        verificationLevel: Number(orgData.verificationLevel || 0),
+        status: Number(orgData.status || 0),
+        registrationDate: Number(orgData.registrationDate || 0),
+        lastUpdated: Number(orgData.lastUpdated || 0),
+        totalBootcamps: Number(orgData.totalBootcamps || 0),
+        totalStudents: Number(orgData.totalStudents || 0),
+        reputationScore: Number(orgData.reputationScore || 0),
+        specializations: specializations,
+        canCreateBootcamps: Boolean(orgData.canCreateBootcamps),
+        canIssueCertificates: Boolean(orgData.canIssueCertificates),
+        stakingAmount: Number(orgData.stakingAmount || 0)
+      };
+    } catch (error) {
+      console.error(`Error loading organization ${id}:`, error);
+      return null;
+    }
+  };
+
+  const filterOrganizations = () => {
+    let filtered = [...organizations];
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(org => 
+        org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        org.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        org.specializations.some(spec => spec.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Filter by verification level
+    if (verificationFilter !== null) {
+      filtered = filtered.filter(org => org.verificationLevel === verificationFilter);
+    }
+
+    // Filter by status
+    if (statusFilter !== null) {
+      filtered = filtered.filter(org => org.status === statusFilter);
+    }
+
+    // Filter by specialization
+    if (specializationFilter) {
+      filtered = filtered.filter(org =>
+        org.specializations.some(spec => 
+          spec.toLowerCase().includes(specializationFilter.toLowerCase())
+        )
+      );
+    }
+
+    setFilteredOrgs(filtered);
+  };
+
+  const getVerificationLevelText = (level: number) => {
+    const levels = ['Unverified', 'Verified', 'Premium', 'Enterprise'];
+    return levels[level] || 'Unknown';
+  };
+
+  const getVerificationLevelColor = (level: number) => {
+    const colors = ['gray', 'blue', 'purple', 'green'];
+    return colors[level] || 'gray';
+  };
+
+  const getStatusText = (status: number) => {
+    const statuses = ['Pending', 'Active', 'Suspended', 'Blacklisted'];
+    return statuses[status] || 'Unknown';
+  };
+
+  const formatDate = (timestamp: number) => {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp * 1000).toLocaleDateString();
+  };
+
+  const formatAddress = (addr: string) => {
+    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-300 rounded w-1/3 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-64 bg-gray-300 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Organization Directory</h1>
+        <p className="text-gray-600">
+          Discover verified educational organizations on the SkillPays platform.
+        </p>
+      </div>
+
+      {/* Filters */}
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Search className="w-4 h-4 inline mr-1" />
+                Search Organizations
+              </label>
+              <Input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, description, or specialization..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Shield className="w-4 h-4 inline mr-1" />
+                Verification Level
+              </label>
+              <select
+                value={verificationFilter ?? ''}
+                onChange={(e) => setVerificationFilter(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Levels</option>
+                <option value="0">Unverified</option>
+                <option value="1">Verified</option>
+                <option value="2">Premium</option>
+                <option value="3">Enterprise</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Filter className="w-4 h-4 inline mr-1" />
+                Status
+              </label>
+              <select
+                value={statusFilter ?? ''}
+                onChange={(e) => setStatusFilter(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Statuses</option>
+                <option value="0">Pending</option>
+                <option value="1">Active</option>
+                <option value="2">Suspended</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Specialization
+              </label>
+              <Input
+                type="text"
+                value={specializationFilter}
+                onChange={(e) => setSpecializationFilter(e.target.value)}
+                placeholder="Filter by specialization..."
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results Summary */}
+      <div className="mb-6">
+        <p className="text-gray-600">
+          Showing {filteredOrgs.length} of {organizations.length} organizations
+        </p>
+      </div>
+
+      {/* Organizations Grid */}
+      {filteredOrgs.length === 0 ? (
+        <Card className="text-center">
+          <CardContent className="p-12">
+            <Building2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Organizations Found</h3>
+            <p className="text-gray-600">
+              {organizations.length === 0 
+                ? 'No organizations have been registered yet.' 
+                : 'Try adjusting your filters to see more results.'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredOrgs.map((org) => (
+            <Card key={org.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    {org.logoUrl ? (
+                      <img 
+                        src={org.logoUrl} 
+                        alt={`${org.name} logo`}
+                        className="w-12 h-12 rounded-lg object-cover border"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <Building2 className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">{org.name}</CardTitle>
+                      <p className="text-sm text-gray-500">{formatAddress(org.walletAddress)}</p>
+                    </div>
+                  </div>
+                  <Badge variant={getVerificationLevelColor(org.verificationLevel) as any} className="text-xs">
+                    {getVerificationLevelText(org.verificationLevel)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-gray-600 text-sm line-clamp-3">
+                    {org.description}
+                  </p>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="flex items-center justify-center gap-1">
+                        <BookOpen className="w-4 h-4 text-blue-600" />
+                        <span className="text-lg font-semibold text-gray-900">{org.totalBootcamps}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Bootcamps</p>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-center gap-1">
+                        <Users className="w-4 h-4 text-green-600" />
+                        <span className="text-lg font-semibold text-gray-900">{org.totalStudents}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Students</p>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-600" />
+                        <span className="text-lg font-semibold text-gray-900">{org.reputationScore}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Reputation</p>
+                    </div>
+                  </div>
+
+                  {/* Specializations */}
+                  {org.specializations.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-700 mb-2">Specializations</p>
+                      <div className="flex flex-wrap gap-1">
+                        {org.specializations.slice(0, 3).map((spec) => (
+                          <Badge key={spec} variant="outline" className="text-xs">
+                            {spec}
+                          </Badge>
+                        ))}
+                        {org.specializations.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{org.specializations.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Links */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    {org.website ? (
+                      <a 
+                        href={org.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        <Globe className="w-4 h-4" />
+                        Website
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <div></div>
+                    )}
+                    
+                    <div className="flex items-center gap-2">
+                      {org.canCreateBootcamps && (
+                        <Badge variant="green" className="text-xs">
+                          Creates Bootcamps
+                        </Badge>
+                      )}
+                      {org.canIssueCertificates && (
+                        <Badge variant="blue" className="text-xs">
+                          Issues Certificates
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-500">
+                    Registered: {formatDate(org.registrationDate)}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
