@@ -57,7 +57,7 @@ function WalletConnectionPrompt() {
 const features = [
   {
     icon: GraduationCap,
-    title: 'Learn & Earn',
+    title: 'Learn & Proof',
     description: 'Master new skills through interactive bootcamps while earning cryptocurrency rewards for every milestone completed.',
     href: '/student',
     color: 'blue',
@@ -202,9 +202,10 @@ export default function Home() {
               The Future of Learning is Here
             </div>
             
-            <h1 className="text-responsive-6xl font-black text-gray-900 leading-tight">
-              Learn. <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent animate-gradient">Earn.</span> <br />
-              <span className="text-responsive-5xl">Transform Your Future.</span>
+            <h1 className="text-responsive-4xl font-black text-gray-900 leading-tight">
+              Learn.
+                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent animate-gradient">Prove.</span> <br />
+              <span className="text-responsive-5xl">Get Rewarded.</span>
             </h1>
             
             <p className="text-responsive-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
