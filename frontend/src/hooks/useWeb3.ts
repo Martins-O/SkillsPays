@@ -41,14 +41,17 @@ export function useWeb3() {
   useEffect(() => {
     if (typeof window === 'undefined' || !window.ethereum) return;
 
-    const handleAccountsChanged = (accounts: string[]) => {
+    const handleAccountsChanged = (...args: unknown[]) => {
+      const accounts = args[0] as string[];
       setAccount(accounts.length > 0 ? accounts[0] : null);
     };
 
     window.ethereum.on('accountsChanged', handleAccountsChanged);
 
     return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      if (typeof window !== 'undefined' && window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
     };
   }, []);
 

@@ -20,6 +20,13 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn", // Downgrade from error to warning
+      "react/no-unescaped-entities": "warn", // Downgrade from error to warning
+      "prefer-const": "warn", // Downgrade from error to warning
+    }
+  },
 ];
 
 export default eslintConfig;

@@ -15,22 +15,22 @@ import JobBoardIntegrationAbi from './artifacts/contracts/JobBoardIntegration.so
 import AntiCheatingSystemAbi from './artifacts/contracts/AntiCheatingSystem.sol/AntiCheatingSystem.json';
 import DecentralizedVerificationAbi from './artifacts/contracts/DecentralizedVerification.sol/DecentralizedVerification.json';
 
-export const SKILL_PAYS_CORE_ABI = SkillPaysCoreAbi.abi as const;
+export const SKILL_PAYS_CORE_ABI = SkillPaysCoreAbi.abi;
 // Temporarily use SkillPaysCore ABI for V2 until deployed
-export const SKILL_PAYS_CORE_V2_ABI = SkillPaysCoreAbi.abi as const;
+export const SKILL_PAYS_CORE_V2_ABI = SkillPaysCoreAbi.abi;
 // Create a placeholder ABI for OrganizationRegistry until deployed
 export const ORGANIZATION_REGISTRY_ABI = [] as const;
-export const STUDENT_BADGES_ABI = StudentBadgesAbi.abi as const;
-export const SKILL_GRAPH_ABI = SkillGraphAbi.abi as const;
-export const PEER_REVIEW_SYSTEM_ABI = PeerReviewSystemAbi.abi as const;
-export const MENTOR_BOOST_SYSTEM_ABI = MentorBoostSystemAbi.abi as const;
-export const MICRO_REWARDS_SYSTEM_ABI = MicroRewardsSystemAbi.abi as const;
-export const LEADERBOARD_SOCIAL_ABI = LeaderboardSocialAbi.abi as const;
-export const GRADUATE_DAO_ABI = GraduateDAOAbi.abi as const;
-export const CROSS_BOOTCAMP_REGISTRY_ABI = CrossBootcampRegistryAbi.abi as const;
-export const JOB_BOARD_INTEGRATION_ABI = JobBoardIntegrationAbi.abi as const;
-export const ANTI_CHEATING_SYSTEM_ABI = AntiCheatingSystemAbi.abi as const;
-export const DECENTRALIZED_VERIFICATION_ABI = DecentralizedVerificationAbi.abi as const;
+export const STUDENT_BADGES_ABI = StudentBadgesAbi.abi;
+export const SKILL_GRAPH_ABI = SkillGraphAbi.abi;
+export const PEER_REVIEW_SYSTEM_ABI = PeerReviewSystemAbi.abi;
+export const MENTOR_BOOST_SYSTEM_ABI = MentorBoostSystemAbi.abi;
+export const MICRO_REWARDS_SYSTEM_ABI = MicroRewardsSystemAbi.abi;
+export const LEADERBOARD_SOCIAL_ABI = LeaderboardSocialAbi.abi;
+export const GRADUATE_DAO_ABI = GraduateDAOAbi.abi;
+export const CROSS_BOOTCAMP_REGISTRY_ABI = CrossBootcampRegistryAbi.abi;
+export const JOB_BOARD_INTEGRATION_ABI = JobBoardIntegrationAbi.abi;
+export const ANTI_CHEATING_SYSTEM_ABI = AntiCheatingSystemAbi.abi;
+export const DECENTRALIZED_VERIFICATION_ABI = DecentralizedVerificationAbi.abi;
 
 export const CONTRACT_ABIS = {
   SKILL_PAYS_CORE: SKILL_PAYS_CORE_ABI,

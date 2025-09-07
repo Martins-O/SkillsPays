@@ -24,7 +24,7 @@ export function Layout({ children }: LayoutProps) {
                   SkillPays
                 </h3>
                 <p className="text-gray-300 leading-relaxed max-w-md">
-                  The world's first decentralized learning platform where education meets blockchain technology. 
+                  The world&apos;s first decentralized learning platform where education meets blockchain technology. 
                   Earn cryptocurrency rewards, gain verified credentials, and unlock opportunities while you learn.
                 </p>
               </div>
@@ -133,7 +133,7 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                     <div className="bg-purple-900/30 rounded-xl p-4 border border-purple-800/50">
                       <div className="text-purple-400 font-semibold mb-1">Ethereum Security</div>
-                      <div className="text-gray-300 text-sm">Inherits Ethereum's proven security model</div>
+                      <div className="text-gray-300 text-sm">Inherits Ethereum&apos;s proven security model</div>
                     </div>
                     <div className="bg-orange-900/30 rounded-xl p-4 border border-orange-800/50">
                       <div className="text-orange-400 font-semibold mb-1">EVM Compatible</div>

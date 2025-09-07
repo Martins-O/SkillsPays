@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useOrganizationRegistry } from '@/hooks/useContracts';
 import { useWeb3 } from '@/hooks/useWeb3';
 import { Card, CardHeader, CardTitle, CardContent, Badge, TransactionButton } from '@/components/ui';
+import { getSafeImageProps, isValidExternalUrl } from '@/utils/security';
 import { 
   Building2, 
   Users, 
@@ -55,13 +56,7 @@ export default function OrganizationDashboard() {
   const [stakeAmount, setStakeAmount] = useState('0.1');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (account) {
-      loadOrganizationData();
-    }
-  }, [account]);
-
-  const loadOrganizationData = async () => {
+  const loadOrganizationData = useCallback(async () => {
     if (!account) return;
     
     try {
@@ -103,7 +98,13 @@ export default function OrganizationDashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [account, getOrganizationByAddress, getOrganizationSpecializations]);
+
+  useEffect(() => {
+    if (account) {
+      loadOrganizationData();
+    }
+  }, [account, loadOrganizationData]);
 
   const handleDepositStake = async () => {
     try {
@@ -170,9 +171,12 @@ export default function OrganizationDashboard() {
               This wallet address is not registered as an organization. 
               Register your organization to start creating bootcamps and managing students.
             </p>
-            <TransactionButton>
+            <a
+              href="/organizations"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
               Register Organization
-            </TransactionButton>
+            </a>
           </CardContent>
         </Card>
       </div>
@@ -187,15 +191,18 @@ export default function OrganizationDashboard() {
           <div className="flex items-center gap-4">
             {organization.logoUrl ? (
               <img 
-                src={organization.logoUrl} 
-                alt={`${organization.name} logo`}
+                {...getSafeImageProps(organization.logoUrl, `${organization.name} logo`)}
                 className="w-16 h-16 rounded-lg object-cover border"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
               />
-            ) : (
-              <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-gray-400" />
-              </div>
-            )}
+            ) : null}
+            <div className={`w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center ${organization.logoUrl ? 'hidden' : ''}`}>
+              <Building2 className="w-8 h-8 text-gray-400" />
+            </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{organization.name}</h1>
               <div className="flex items-center gap-3 mt-2">
@@ -280,7 +287,7 @@ export default function OrganizationDashboard() {
                 <p className="text-gray-900">{organization.description}</p>
               </div>
               
-              {organization.website && (
+              {organization.website && isValidExternalUrl(organization.website) && (
                 <div>
                   <p className="text-sm font-medium text-gray-600">Website</p>
                   <a 
@@ -327,11 +334,11 @@ export default function OrganizationDashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-2">Capabilities</p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant={organization.canCreateBootcamps ? "green" : "gray"}>
+                  <Badge variant={organization.canCreateBootcamps ? "success" : "secondary"}>
                     <BookOpen className="w-3 h-3 mr-1" />
                     {organization.canCreateBootcamps ? 'Can Create Bootcamps' : 'Cannot Create Bootcamps'}
                   </Badge>
-                  <Badge variant={organization.canIssueCertificates ? "blue" : "gray"}>
+                  <Badge variant={organization.canIssueCertificates ? "primary" : "secondary"}>
                     <Shield className="w-3 h-3 mr-1" />
                     {organization.canIssueCertificates ? 'Can Issue Certificates' : 'Cannot Issue Certificates'}
                   </Badge>
@@ -364,7 +371,7 @@ export default function OrganizationDashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              Deposit additional stake to increase your organization's trust score and unlock premium features.
+              Deposit additional stake to increase your organization&apos;s trust score and unlock premium features.
             </p>
             
             <div className="space-y-4">
@@ -383,7 +390,7 @@ export default function OrganizationDashboard() {
               </div>
               
               <TransactionButton
-                onClick={handleDepositStake}
+                onTransaction={handleDepositStake}
                 disabled={loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
                 className="w-full"
               >

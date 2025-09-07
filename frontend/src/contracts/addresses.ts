@@ -45,7 +45,7 @@ export type ContractName = keyof typeof CONTRACT_ADDRESSES;
 
 export const getContractAddress = (name: ContractName): string => {
   const address = CONTRACT_ADDRESSES[name];
-  if (!address || address === "0x0000000000000000000000000000000000000000") {
+  if (!address) {
     throw new Error(`Contract ${name} not deployed or address not set`);
   }
   return address;

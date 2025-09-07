@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSkillPaysCore, useStudentBadges } from '@/hooks/useContracts';
 import { useWeb3 } from '@/hooks/useWeb3';
-import { Card, CardHeader, CardTitle, CardContent, Input, TransactionBadge } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Input, Button, Badge } from '@/components/ui';
+import { sanitizeText } from '@/utils/security';
 import BadgeCollection from '@/components/contracts/StudentBadges/BadgeCollection';
 import { UserIcon, TrophyIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 
@@ -30,19 +31,16 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [showBadges, setShowBadges] = useState(false);
   const [studentName, setStudentName] = useState('');
+  const [registering, setRegistering] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   
   const { getStudent, getStudentBootcamps, getBootcamp, registerStudent } = useSkillPaysCore();
   const { balanceOf } = useStudentBadges();
   const { account, connect } = useWeb3();
 
-  useEffect(() => {
-    if (account) {
-      loadStudentData();
-    }
-  }, [account]);
-
-  const loadStudentData = async () => {
+  const loadStudentData = useCallback(async () => {
     if (!account) return;
     
     try {
@@ -106,16 +104,59 @@ export default function StudentDashboard() {
     } finally {
       setLoading(false);
     }
+  }, [account, getStudent, getStudentBootcamps, getBootcamp, balanceOf]);
+
+  useEffect(() => {
+    if (account) {
+      loadStudentData();
+    }
+  }, [account, loadStudentData]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const validateStudentName = (name: string) => {
+    if (!name.trim()) {
+      setNameError('Name is required');
+      return false;
+    }
+    if (name.trim().length < 2) {
+      setNameError('Name must be at least 2 characters');
+      return false;
+    }
+    if (name.trim().length > 50) {
+      setNameError('Name must be less than 50 characters');
+      return false;
+    }
+    if (!/^[a-zA-Z\s\-'\.]+$/.test(name.trim())) {
+      setNameError('Name can only contain letters, spaces, hyphens, apostrophes, and periods');
+      return false;
+    }
+    setNameError('');
+    return true;
+  };
+
+  const handleStudentNameChange = (value: string) => {
+    setStudentName(value);
+    if (nameError) {
+      validateStudentName(value);
+    }
   };
 
   const handleRegisterStudent = async () => {
-    if (!account || !studentName.trim()) return;
+    if (!account || !validateStudentName(studentName)) return;
     
     try {
       setRegistering(true);
-      await registerStudent(studentName.trim());
+      await registerStudent(sanitizeText(studentName.trim()));
       // Reload data after registration
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         loadStudentData();
       }, 2000); // Wait for transaction to be mined
     } catch (error) {
@@ -141,14 +182,14 @@ export default function StudentDashboard() {
             </p>
           </CardHeader>
           <CardContent>
-            <TransactionButton
-              onTransaction={connect}
+            <Button
+              onClick={connect}
               className="w-full"
               size="lg"
               variant="default"
             >
               Connect Wallet
-            </TransactionButton>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -183,28 +224,29 @@ export default function StudentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Input
-                type="text"
-                placeholder="Enter your full name"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                label="Student Name"
-                required
-                leftIcon={<UserIcon className="h-4 w-4" />}
-              />
+              <div>
+                <Input
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={studentName}
+                  onChange={(e) => handleStudentNameChange(e.target.value)}
+                  label="Student Name"
+                  required
+                  leftIcon={<UserIcon className="h-4 w-4" />}
+                />
+                {nameError && (
+                  <p className="text-red-600 text-sm mt-1">{nameError}</p>
+                )}
+              </div>
               
-              <TransactionButton
-                onTransaction={handleRegisterStudent}
-                disabled={!studentName.trim()}
+              <Button
+                onClick={handleRegisterStudent}
+                disabled={!studentName.trim() || !!nameError || registering}
                 className="w-full"
                 size="lg"
-                successMessage="Registration successful! Welcome to SkillPays!"
-                pendingMessage="Confirm registration in your wallet..."
-                confirmingMessage="Registering your profile..."
-                resetOnSuccess
               >
-                Register as Student
-              </TransactionButton>
+                {registering ? 'Registering...' : 'Register as Student'}
+              </Button>
               
               <p className="text-xs text-neutral-500 text-center">
                 By you agree to our terms of service and privacy policy.

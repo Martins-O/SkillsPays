@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { getSigner, getContract } from '@/lib/web3';
 import { CONTRACT_ABIS } from '@/contracts/abis';
 import { getContractAddress, ContractName } from '@/contracts/addresses';
+import { safeContractCall, handleUserError, getUserFriendlyError } from '@/utils/errorHandling';
 
 interface ContractHookReturn {
   loading: boolean;
@@ -108,7 +109,7 @@ export function useSkillPaysCore() {
       name, 
       description, 
       duration, 
-      feeWei, 
+      feeWei.toString(), 
       tags, 
       maxStudents, 
       requiresVerification
@@ -117,7 +118,7 @@ export function useSkillPaysCore() {
 
   const enrollInBootcamp = useCallback(async (bootcampId: number, fee: string) => {
     const feeWei = ethers.parseEther(fee);
-    return baseHook.callContract('enrollInBootcamp', [bootcampId], { value: feeWei });
+    return baseHook.callContract('enrollInBootcamp', [bootcampId], { value: feeWei.toString() });
   }, [baseHook]);
 
   const getBootcamp = useCallback(async (bootcampId: number) => {
@@ -139,7 +140,7 @@ export function useSkillPaysCore() {
       description,
       requiredScore,
       isCompulsory,
-      rewardWei
+      rewardWei.toString()
     ]);
   }, [baseHook]);
 
@@ -263,7 +264,7 @@ export function usePeerReviewSystem() {
 
   const registerReviewer = useCallback(async (stakeAmount: string) => {
     const stakeWei = ethers.parseEther(stakeAmount);
-    return baseHook.callContract('registerReviewer', [], { value: stakeWei });
+    return baseHook.callContract('registerReviewer', [], { value: stakeWei.toString() });
   }, [baseHook]);
 
   const createReviewRequest = useCallback(async (
@@ -347,7 +348,7 @@ export function useMentorBoostSystem() {
     availability: string
   ) => {
     const rateWei = ethers.parseEther(hourlyRate);
-    return baseHook.callContract('registerMentor', [specializations, rateWei, availability]);
+    return baseHook.callContract('registerMentor', [specializations, rateWei.toString(), availability]);
   }, [baseHook]);
 
   const requestMentorship = useCallback(async (
@@ -427,7 +428,7 @@ export function useMicroRewardsSystem() {
 
   const addToRewardPool = useCallback(async (amount: string) => {
     const amountWei = ethers.parseEther(amount);
-    return baseHook.callContract('addToRewardPool', [], { value: amountWei });
+    return baseHook.callContract('addToRewardPool', [], { value: amountWei.toString() });
   }, [baseHook]);
 
   return {
@@ -571,7 +572,7 @@ export function useGraduateDAO() {
       description,
       proposalType,
       targetAddress,
-      amountWei
+      amountWei.toString()
     ]);
   }, [baseHook]);
 
@@ -627,7 +628,7 @@ export function useJobBoardIntegration() {
       description,
       requiredSkills,
       skillLevels,
-      salaryWei
+      salaryWei.toString()
     ]);
   }, [baseHook]);
 
@@ -697,7 +698,7 @@ export function useDecentralizedVerification() {
     stakeAmount: string
   ) => {
     const stakeWei = ethers.parseEther(stakeAmount);
-    return baseHook.callContract('registerValidator', [specializations], { value: stakeWei });
+    return baseHook.callContract('registerValidator', [specializations], { value: stakeWei.toString() });
   }, [baseHook]);
 
   const submitForVerification = useCallback(async (
@@ -755,7 +756,7 @@ export function useOrganizationRegistry() {
       logoUrl,
       contactEmail,
       specializations
-    ], { value: feeWei });
+    ], { value: feeWei.toString() });
   }, [baseHook]);
 
   const updateOrganization = useCallback(async (
@@ -776,12 +777,12 @@ export function useOrganizationRegistry() {
 
   const depositStake = useCallback(async (amount: string) => {
     const amountWei = ethers.parseEther(amount);
-    return baseHook.callContract('depositStake', [], { value: amountWei });
+    return baseHook.callContract('depositStake', [], { value: amountWei.toString() });
   }, [baseHook]);
 
   const withdrawStake = useCallback(async (amount: string) => {
     const amountWei = ethers.parseEther(amount);
-    return baseHook.callContract('withdrawStake', [amountWei]);
+    return baseHook.callContract('withdrawStake', [amountWei.toString()]);
   }, [baseHook]);
 
   const getOrganization = useCallback(async (organizationId: number) => {

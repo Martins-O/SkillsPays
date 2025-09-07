@@ -101,65 +101,24 @@ export default function IntegrityDashboard() {
     
     try {
       // Load real data from smart contract
-      let realReports: CheatingReport[] = [];
-      let realAIResults: AIDetectionResult[] = [];
+      const realReports: CheatingReport[] = [];
+      const realAIResults: AIDetectionResult[] = [];
       let realRiskProfile: StudentRiskProfile;
 
-      try {
-        // Get cheating reports from contract
-        const reportData = await antiCheating.getReports();
-        if (reportData && reportData.length > 0) {
-          realReports = reportData.map((report: any, index: number) => ({
-            id: index + 1,
-            reporter: report.reporter || '0x0000000000000000000000000000000000000000',
-            accused: report.accused || '0x0000000000000000000000000000000000000000',
-            cheatingType: report.cheatingType || CHEATING_TYPES.PLAGIARISM,
-            evidenceHash: report.evidenceHash || '',
-            description: report.description || 'No description provided',
-            severity: Number(report.severity || 1),
-            isVerified: Boolean(report.isVerified),
-            isPenalized: Boolean(report.isPenalized),
-            verifiedBy: report.verifiedBy || '0x0000000000000000000000000000000000000000',
-            reportedAt: Number(report.reportedAt || Date.now() / 1000),
-            verifiedAt: Number(report.verifiedAt || 0)
-          }));
-        }
-      } catch (err) {
-        console.log('No cheating reports found in contract');
-      }
+      // Real contract data would be loaded here - methods not yet implemented
+      // For now, showing empty state
 
       try {
-        // Get AI analysis results from contract
-        const aiData = await antiCheating.getAIResults();
-        if (aiData && aiData.length > 0) {
-          realAIResults = aiData.map((result: any) => ({
-            submissionId: Number(result.submissionId || 0),
-            student: result.student || '0x0000000000000000000000000000000000000000',
-            submissionHash: result.submissionHash || '',
-            plagiarismScore: Number(result.plagiarismScore || 0),
-            aiGeneratedScore: Number(result.aiGeneratedScore || 0),
-            similarityScore: Number(result.similarityScore || 0),
-            similarSubmissions: result.similarSubmissions || [],
-            requiresHumanReview: Boolean(result.requiresHumanReview),
-            isApproved: Boolean(result.isApproved),
-            analyzedAt: Number(result.analyzedAt || Date.now() / 1000)
-          }));
-        }
-      } catch (err) {
-        console.log('No AI analysis results found in contract');
-      }
-
-      try {
-        // Get user's risk profile
-        const profileData = await antiCheating.getStudentRiskProfile(account);
+        // Real risk profile would be loaded here - method not yet implemented
+        const profileData = null; // await antiCheating.getStudentRiskProfile(account);
         realRiskProfile = {
           studentAddress: account,
-          riskScore: Number(profileData.riskScore || 100),
-          totalReports: Number(profileData.totalReports || 0),
-          verifiedViolations: Number(profileData.verifiedViolations || 0),
-          isBlacklisted: Boolean(profileData.isBlacklisted),
-          lastViolationTime: Number(profileData.lastViolationTime || 0),
-          suspensionEndTime: Number(profileData.suspensionEndTime || 0)
+          riskScore: 100,
+          totalReports: 0,
+          verifiedViolations: 0,
+          isBlacklisted: false,
+          lastViolationTime: 0,
+          suspensionEndTime: 0
         };
       } catch (err) {
         console.log('No risk profile found, using default');

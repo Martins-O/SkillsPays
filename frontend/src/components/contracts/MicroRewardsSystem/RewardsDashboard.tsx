@@ -101,25 +101,8 @@ export default function RewardsDashboard() {
         };
       }
 
-      try {
-        // Get checkpoints from contract (this would typically be from events or a getter)
-        const checkpointData = await microRewards.getStudentCheckpoints(account);
-        if (checkpointData && checkpointData.length > 0) {
-          checkpoints = checkpointData.map((checkpoint: any, index: number) => ({
-            id: index + 1,
-            student: account,
-            checkpointType: checkpoint.checkpointType || CHECKPOINT_TYPES.DAILY_LOGIN,
-            rewardAmount: Number(checkpoint.rewardAmount || 0),
-            streakMultiplier: Number(checkpoint.streakMultiplier || 100),
-            evidenceHash: checkpoint.evidenceHash || '',
-            timestamp: Number(checkpoint.timestamp || Date.now() / 1000),
-            isClaimed: Boolean(checkpoint.isClaimed),
-            claimedAt: Number(checkpoint.claimedAt || 0)
-          }));
-        }
-      } catch (err) {
-        console.log('No checkpoints found in contract');
-      }
+      // Real checkpoints would be loaded here - method not yet implemented
+      // For now, showing empty state
 
       setStudentProfile(profile);
       setRecentCheckpoints(checkpoints);

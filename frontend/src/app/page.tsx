@@ -208,7 +208,7 @@ export default function Home() {
             </h1>
             
             <p className="text-responsive-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              Join the <strong>world's first</strong> decentralized learning platform where your skills become your wealth. 
+              Join the <strong>world&apos;s first</strong> decentralized learning platform where your skills become your wealth. 
               Earn crypto rewards, get verified credentials, and unlock opportunities you never imagined.
             </p>
           </div>
@@ -289,7 +289,7 @@ export default function Home() {
             The <span className="text-blue-600">SkillPays</span> Experience
           </h2>
           <p className="text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            Discover how we're revolutionizing education with blockchain technology, 
+            Discover how we&apos;re revolutionizing education with blockchain technology, 
             creating unprecedented opportunities for learners worldwide.
           </p>
         </div>
@@ -308,7 +308,7 @@ export default function Home() {
                 <p className="text-xl text-gray-600 leading-relaxed">
                   Transform your learning journey into a rewarding experience. Every milestone you complete, 
                   every skill you master, and every project you finish earns you cryptocurrency rewards. 
-                  This isn't just education—it's an investment in your future that pays dividends from day one.
+                  This isn&apos;t just education—it&apos;s an investment in your future that pays dividends from day one.
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-start space-x-4">
@@ -401,8 +401,8 @@ export default function Home() {
                 </h3>
                 <p className="text-xl text-gray-600 leading-relaxed">
                   Access a global network of industry professionals who are invested in your success. 
-                  Our mentors don't just teach—they guide, inspire, and open doors to opportunities. 
-                  Get personalized feedback, career advice, and insider knowledge that traditional education can't provide.
+                  Our mentors don&apos;t just teach—they guide, inspire, and open doors to opportunities. 
+                  Get personalized feedback, career advice, and insider knowledge that traditional education can&apos;t provide.
                 </p>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
@@ -545,7 +545,7 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-xl text-gray-600 leading-relaxed">
-                Begin your Web3 education journey by connecting your digital wallet. This isn't just login—it's your 
+                Begin your Web3 education journey by connecting your digital wallet. This isn&apos;t just login—it&apos;s your 
                 passport to a decentralized learning ecosystem where your achievements are owned by you, forever.
               </p>
               <div className="grid md:grid-cols-2 gap-4">
@@ -617,7 +617,7 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-xl text-gray-600 leading-relaxed">
-                Explore our curated learning paths designed by industry experts. Whether you're diving into Web3 
+                Explore our curated learning paths designed by industry experts. Whether you&apos;re diving into Web3 
                 development, mastering design, or exploring data science—each path is structured for maximum impact 
                 and real-world application.
               </p>
@@ -818,7 +818,7 @@ export default function Home() {
               ))}
             </div>
             <blockquote className="text-xl md:text-2xl text-gray-700 leading-relaxed italic">
-              "{testimonials[currentTestimonial].text}"
+              &ldquo;{testimonials[currentTestimonial].text}&rdquo;
             </blockquote>
             <div className="space-y-1">
               <div className="font-bold text-gray-900 text-lg">{testimonials[currentTestimonial].name}</div>

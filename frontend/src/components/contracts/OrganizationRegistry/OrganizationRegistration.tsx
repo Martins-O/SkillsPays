@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useOrganizationRegistry } from '@/hooks/useContracts';
 import { useWeb3 } from '@/hooks/useWeb3';
 import { Card, CardHeader, CardTitle, CardContent, Input, TransactionButton } from '@/components/ui';
+import { sanitizeText, isValidEmail, isValidExternalUrl } from '@/utils/security';
 import { Building2, Globe, Mail, Image, FileText, Tags } from 'lucide-react';
 
 export default function OrganizationRegistration() {
@@ -21,6 +22,7 @@ export default function OrganizationRegistration() {
   });
   
   const [currentSpecialization, setCurrentSpecialization] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const predefinedSpecializations = [
     'Web Development',
@@ -61,6 +63,39 @@ export default function OrganizationRegistration() {
     }
   };
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Organization name is required';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Organization name must be at least 2 characters';
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
+    } else if (formData.description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    
+    if (!formData.contactEmail.trim()) {
+      errors.contactEmail = 'Contact email is required';
+    } else if (!isValidEmail(formData.contactEmail.trim())) {
+      errors.contactEmail = 'Please enter a valid email address';
+    }
+    
+    if (formData.website && !isValidExternalUrl(formData.website.trim())) {
+      errors.website = 'Please enter a valid website URL';
+    }
+    
+    if (formData.logoUrl && !isValidExternalUrl(formData.logoUrl.trim())) {
+      errors.logoUrl = 'Please enter a valid logo URL';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -69,14 +104,14 @@ export default function OrganizationRegistration() {
       return;
     }
 
-    if (!formData.name.trim() || !formData.description.trim() || !formData.contactEmail.trim()) {
+    if (!validateForm()) {
       return;
     }
 
     try {
       await registerOrganization(
-        formData.name.trim(),
-        formData.description.trim(),
+        sanitizeText(formData.name.trim()),
+        sanitizeText(formData.description.trim()),
         formData.website.trim(),
         formData.logoUrl.trim(),
         formData.contactEmail.trim(),
@@ -112,7 +147,7 @@ export default function OrganizationRegistration() {
           <p className="text-gray-600 mb-4">
             Please connect your wallet to register your organization on the SkillPays platform.
           </p>
-          <TransactionButton onClick={connect}>
+          <TransactionButton onTransaction={connect}>
             Connect Wallet
           </TransactionButton>
         </CardContent>
@@ -150,6 +185,9 @@ export default function OrganizationRegistration() {
                 required
                 disabled={loading}
               />
+              {validationErrors.name && (
+                <p className="text-red-600 text-sm mt-1">{validationErrors.name}</p>
+              )}
             </div>
 
             <div>
@@ -165,6 +203,9 @@ export default function OrganizationRegistration() {
                 required
                 disabled={loading}
               />
+              {validationErrors.contactEmail && (
+                <p className="text-red-600 text-sm mt-1">{validationErrors.contactEmail}</p>
+              )}
             </div>
           </div>
 
@@ -314,7 +355,7 @@ export default function OrganizationRegistration() {
             <h4 className="font-medium text-blue-900 mb-2">Next Steps</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Your application will be reviewed by our team</li>
-              <li>• You'll receive approval notification within 2-3 business days</li>
+              <li>• You&apos;ll receive approval notification within 2-3 business days</li>
               <li>• Once approved, you can create bootcamps and manage students</li>
               <li>• Additional verification levels unlock premium features</li>
             </ul>
@@ -327,7 +368,7 @@ export default function OrganizationRegistration() {
           )}
 
           <TransactionButton
-            type="submit"
+            onTransaction={() => handleSubmit({} as React.FormEvent)}
             disabled={loading || !formData.name.trim() || !formData.description.trim() || !formData.contactEmail.trim()}
             className="w-full"
           >

@@ -29,7 +29,7 @@ export async function connectWallet(): Promise<string> {
 
   const accounts = await window.ethereum.request({
     method: 'eth_requestAccounts',
-  });
+  }) as string[];
 
   return accounts[0];
 }
@@ -42,7 +42,7 @@ export async function getConnectedAccount(): Promise<string | null> {
 
   const accounts = await window.ethereum.request({
     method: 'eth_accounts',
-  });
+  }) as string[];
 
   return accounts.length > 0 ? accounts[0] : null;
 }

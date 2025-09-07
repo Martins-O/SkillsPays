@@ -58,11 +58,11 @@ const TransactionButton = React.forwardRef<HTMLButtonElement, TransactionButtonP
           });
           
           // Wait for confirmations
-          if (result.wait) {
-            const receipt = await result.wait();
+          if ((result as any).wait) {
+            const receipt = await (result as any).wait();
             setTxState({ 
               status: 'success', 
-              hash: receipt.transactionHash || result.hash,
+              hash: receipt.transactionHash || (result as { hash: string }).hash,
               confirmations: receipt.confirmations || 1
             });
             onSuccess?.(receipt);

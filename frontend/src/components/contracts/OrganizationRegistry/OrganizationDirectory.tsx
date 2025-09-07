@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useOrganizationRegistry } from '@/hooks/useContracts';
 import { Card, CardHeader, CardTitle, CardContent, Badge, Input } from '@/components/ui';
+import { getSafeImageProps, isValidExternalUrl } from '@/utils/security';
+import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { 
   Building2, 
   Users, 
@@ -43,44 +45,17 @@ export default function OrganizationDirectory() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [filteredOrgs, setFilteredOrgs] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [verificationFilter, setVerificationFilter] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<number | null>(1); // Default to Active only
   const [specializationFilter, setSpecializationFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  
+  const ORGS_PER_PAGE = 12;
 
-  useEffect(() => {
-    loadOrganizations();
-  }, []);
-
-  useEffect(() => {
-    filterOrganizations();
-  }, [searchTerm, verificationFilter, statusFilter, specializationFilter, organizations]);
-
-  const loadOrganizations = async () => {
-    try {
-      setLoading(true);
-      const totalOrgs = await getTotalOrganizations();
-      const orgPromises = [];
-
-      // Load organizations (limit to first 50 for performance)
-      const maxOrgs = Math.min(Number(totalOrgs), 50);
-      
-      for (let i = 1; i <= maxOrgs; i++) {
-        orgPromises.push(loadSingleOrganization(i));
-      }
-
-      const loadedOrgs = await Promise.all(orgPromises);
-      const validOrgs = loadedOrgs.filter(org => org !== null) as Organization[];
-      
-      setOrganizations(validOrgs);
-    } catch (error) {
-      console.error('Error loading organizations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSingleOrganization = async (id: number): Promise<Organization | null> => {
+  const loadSingleOrganization = useCallback(async (id: number): Promise<Organization | null> => {
     try {
       const orgData = await getOrganization(id);
       
@@ -120,9 +95,58 @@ export default function OrganizationDirectory() {
       console.error(`Error loading organization ${id}:`, error);
       return null;
     }
-  };
+  }, [getOrganization, getOrganizationSpecializations]);
 
-  const filterOrganizations = () => {
+  const loadOrganizations = useCallback(async (page = 1, append = false) => {
+    try {
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
+      const totalOrgs = await getTotalOrganizations();
+      const totalOrgCount = Number(totalOrgs);
+      
+      // Calculate pagination
+      const startIndex = (page - 1) * ORGS_PER_PAGE + 1;
+      const endIndex = Math.min(page * ORGS_PER_PAGE, totalOrgCount);
+      
+      // Load batch of organizations concurrently  
+      const orgPromises = [];
+      for (let i = startIndex; i <= endIndex; i++) {
+        orgPromises.push(loadSingleOrganization(i));
+      }
+
+      const loadedOrgs = await Promise.all(orgPromises);
+      const validOrgs = loadedOrgs.filter(org => org !== null) as Organization[];
+      
+      if (append) {
+        setOrganizations(prev => [...prev, ...validOrgs]);
+      } else {
+        setOrganizations(validOrgs);
+      }
+      
+      // Check if there are more organizations to load
+      setHasMore(endIndex < totalOrgCount);
+      
+    } catch (error) {
+      console.error('Error loading organizations:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [getTotalOrganizations, loadSingleOrganization, ORGS_PER_PAGE]);
+
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      loadOrganizations(nextPage, true);
+    }
+  }, [currentPage, loadingMore, hasMore, loadOrganizations]);
+
+  const filterOrganizations = useCallback(() => {
     let filtered = [...organizations];
 
     // Filter by search term
@@ -154,7 +178,15 @@ export default function OrganizationDirectory() {
     }
 
     setFilteredOrgs(filtered);
-  };
+  }, [organizations, searchTerm, verificationFilter, statusFilter, specializationFilter]);
+
+  useEffect(() => {
+    loadOrganizations();
+  }, [loadOrganizations]);
+
+  useEffect(() => {
+    filterOrganizations();
+  }, [filterOrganizations]);
 
   const getVerificationLevelText = (level: number) => {
     const levels = ['Unverified', 'Verified', 'Premium', 'Enterprise'];
@@ -183,13 +215,31 @@ export default function OrganizationDirectory() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-300 rounded w-1/3 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 bg-gray-300 rounded"></div>
-            ))}
-          </div>
+        {/* Header Skeleton */}
+        <div className="mb-8">
+          <div className="h-8 bg-gray-300 rounded w-1/3 mb-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-300 rounded w-2/3 animate-pulse"></div>
+        </div>
+
+        {/* Filters Skeleton */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i}>
+                  <div className="h-4 bg-gray-300 rounded w-1/2 mb-2 animate-pulse"></div>
+                  <div className="h-10 bg-gray-300 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: ORGS_PER_PAGE }, (_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       </div>
     );
@@ -219,6 +269,7 @@ export default function OrganizationDirectory() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name, description, or specialization..."
+                aria-label="Search organizations"
               />
             </div>
 
@@ -231,6 +282,7 @@ export default function OrganizationDirectory() {
                 value={verificationFilter ?? ''}
                 onChange={(e) => setVerificationFilter(e.target.value ? Number(e.target.value) : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-label="Filter by verification level"
               >
                 <option value="">All Levels</option>
                 <option value="0">Unverified</option>
@@ -249,6 +301,7 @@ export default function OrganizationDirectory() {
                 value={statusFilter ?? ''}
                 onChange={(e) => setStatusFilter(e.target.value ? Number(e.target.value) : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-label="Filter by organization status"
               >
                 <option value="">All Statuses</option>
                 <option value="0">Pending</option>
@@ -266,6 +319,7 @@ export default function OrganizationDirectory() {
                 value={specializationFilter}
                 onChange={(e) => setSpecializationFilter(e.target.value)}
                 placeholder="Filter by specialization..."
+                aria-label="Filter by specialization"
               />
             </div>
           </div>
@@ -293,26 +347,35 @@ export default function OrganizationDirectory() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredOrgs.map((org) => (
-            <Card key={org.id} className="hover:shadow-lg transition-shadow">
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredOrgs.map((org) => (
+            <Card 
+              key={org.id} 
+              className="hover:shadow-lg transition-shadow focus-within:ring-2 focus-within:ring-blue-500" 
+              role="article" 
+              aria-labelledby={`org-title-${org.id}`}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     {org.logoUrl ? (
                       <img 
-                        src={org.logoUrl} 
-                        alt={`${org.name} logo`}
+                        {...getSafeImageProps(org.logoUrl, `${org.name} logo`)}
                         className="w-12 h-12 rounded-lg object-cover border"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
                       />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Building2 className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
+                    ) : null}
+                    <div className={`w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center ${org.logoUrl ? 'hidden' : ''}`}>
+                      <Building2 className="w-6 h-6 text-gray-400" />
+                    </div>
                     <div className="flex-1">
-                      <CardTitle className="text-lg">{org.name}</CardTitle>
-                      <p className="text-sm text-gray-500">{formatAddress(org.walletAddress)}</p>
+                      <CardTitle id={`org-title-${org.id}`} className="text-lg">{org.name}</CardTitle>
+                      <p className="text-sm text-gray-500" aria-label="Wallet address">{formatAddress(org.walletAddress)}</p>
                     </div>
                   </div>
                   <Badge variant={getVerificationLevelColor(org.verificationLevel) as any} className="text-xs">
@@ -373,12 +436,13 @@ export default function OrganizationDirectory() {
 
                   {/* Links */}
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    {org.website ? (
+                    {org.website && isValidExternalUrl(org.website) ? (
                       <a 
                         href={org.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded text-sm"
+                        aria-label={`Visit ${org.name} website`}
                       >
                         <Globe className="w-4 h-4" />
                         Website
@@ -390,12 +454,12 @@ export default function OrganizationDirectory() {
                     
                     <div className="flex items-center gap-2">
                       {org.canCreateBootcamps && (
-                        <Badge variant="green" className="text-xs">
+                        <Badge variant="success" className="text-xs">
                           Creates Bootcamps
                         </Badge>
                       )}
                       {org.canIssueCertificates && (
-                        <Badge variant="blue" className="text-xs">
+                        <Badge variant="primary" className="text-xs">
                           Issues Certificates
                         </Badge>
                       )}
@@ -410,6 +474,33 @@ export default function OrganizationDirectory() {
             </Card>
           ))}
         </div>
+        
+        {/* Loading More Skeleton */}
+        {loadingMore && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            {Array.from({ length: Math.min(ORGS_PER_PAGE, 6) }, (_, i) => (
+              <CardSkeleton key={`loading-${i}`} />
+            ))}
+          </div>
+        )}
+        
+        {/* Load More Button */}
+        {hasMore && !loading && filteredOrgs.length > 0 && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              aria-label={loadingMore ? 'Loading more organizations' : 'Load more organizations'}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
+            >
+              {loadingMore && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              {loadingMore ? 'Loading...' : 'Load More Organizations'}
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );
