@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Header } from './Header';
 
 interface LayoutProps {
@@ -56,24 +57,24 @@ export function Layout({ children }: LayoutProps) {
             <div className="space-y-6">
               <h4 className="text-lg font-semibold">Quick Links</h4>
               <div className="space-y-3">
-                <a href="/skills" className="block text-gray-300 hover:text-blue-400 transition-colors">
+                <Link href="/skills" className="block text-gray-300 hover:text-blue-400 transition-colors">
                   Browse Skills
-                </a>
-                <a href="/bootcamps" className="block text-gray-300 hover:text-blue-400 transition-colors">
+                </Link>
+                <Link href="/bootcamps" className="block text-gray-300 hover:text-blue-400 transition-colors">
                   Bootcamps
-                </a>
-                <a href="/mentor" className="block text-gray-300 hover:text-blue-400 transition-colors">
+                </Link>
+                <Link href="/mentor" className="block text-gray-300 hover:text-blue-400 transition-colors">
                   Find a Mentor
-                </a>
-                <a href="/peer-review" className="block text-gray-300 hover:text-blue-400 transition-colors">
+                </Link>
+                <Link href="/peer-review" className="block text-gray-300 hover:text-blue-400 transition-colors">
                   Peer Review
-                </a>
-                <a href="/rewards" className="block text-gray-300 hover:text-blue-400 transition-colors">
+                </Link>
+                <Link href="/rewards" className="block text-gray-300 hover:text-blue-400 transition-colors">
                   Rewards
-                </a>
-                <a href="/leaderboard" className="block text-gray-300 hover:text-blue-400 transition-colors">
+                </Link>
+                <Link href="/leaderboard" className="block text-gray-300 hover:text-blue-400 transition-colors">
                   Leaderboard
-                </a>
+                </Link>
               </div>
             </div>
 

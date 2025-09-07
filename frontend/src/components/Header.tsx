@@ -51,6 +51,12 @@ export function Header() {
           label: 'Organizations', 
           icon: Users,
           description: 'Discover educational organizations and register your own'
+        },
+        { 
+          href: '/mentor', 
+          label: 'Mentorship', 
+          icon: Heart,
+          description: 'Become a mentor or find expert guidance'
         }
       ] as DropdownItem[]
     },

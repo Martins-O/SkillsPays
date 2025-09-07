@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useOrganizationRegistry } from '@/hooks/useContracts';
 import { useWeb3 } from '@/hooks/useWeb3';
 import { Card, CardHeader, CardTitle, CardContent, Badge, TransactionButton } from '@/components/ui';
@@ -171,12 +172,12 @@ export default function OrganizationDashboard() {
               This wallet address is not registered as an organization. 
               Register your organization to start creating bootcamps and managing students.
             </p>
-            <a
+            <Link
               href="/organizations"
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Register Organization
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </div>
